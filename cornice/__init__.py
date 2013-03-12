@@ -11,6 +11,7 @@ from cornice.pyramidhook import (
     register_service_views,
     handle_exceptions
 )
+from datetime import datetime
 
 logger = logging.getLogger('cornice')
 __version__ = 0.14
@@ -36,5 +37,8 @@ def includeme(config):
     config.add_directive('add_cornice_service', register_service_views)
     config.add_subscriber(add_renderer_globals, BeforeRender)
     config.add_subscriber(wrap_request, NewRequest)
+    config.add_tween('cornice.pyramidhook.tween_factory')
+    util.json_renderer.add_adapter(datetime, util.json_datetime_adapter)
+    util.json_renderer.add_adapter(datetime, util.json_decimal_adapter)
     config.add_renderer('simplejson', util.json_renderer)
     config.add_view(handle_exceptions, context=Exception)

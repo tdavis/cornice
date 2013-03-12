@@ -1,39 +1,25 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
-import sys
-
 import simplejson as json
 
 from pyramid import httpexceptions as exc
 from pyramid.response import Response
+from pyramid.renderers import JSON
 
 
-__all__ = ['json_renderer', 'to_list', 'json_error', 'match_accept_header',
+__all__ = ['json_datetime_adapter', 'json_decimal_adapter', 'json_renderer', 'to_list', 'json_error', 'match_accept_header',
            'extract_request_data']
 
-
-PY3 = sys.version_info[0] == 3
-
-if PY3:
-    string_types = str,
-else:
-    string_types = basestring,
+json_renderer = JSON(serializer=json.dumps)
 
 
-def is_string(s):
-    return isinstance(s, string_types)
+def json_datetime_adapter(obj, request):
+    return obj.isoformat()
 
 
-def json_renderer(helper):
-    return _JsonRenderer()
-
-
-class _JsonRenderer(object):
-    def __call__(self, data, context):
-        response = context['request'].response
-        response.content_type = context['request'].accept.best_match(('application/json', 'text/json', 'text/plain')) or 'application/json'
-        return json.dumps(data, use_decimal=True)
+def json_decimal_adapter(obj, request):
+    return json.dumps(obj, use_decimal=True)
 
 
 def to_list(obj):
@@ -74,7 +60,7 @@ def extract_request_data(request):
     if request.body:
         try:
             body = json.loads(request.body)
-        except ValueError as e:
+        except ValueError, e:
             request.errors.add('body', None, e.message)
             body = {}
     else:
