@@ -86,6 +86,28 @@ def get_fallback_view(service):
     return _fallback_view
 
 
+def tween_factory(handler, registry):
+    """Wraps the default WSGI workflow to provide cornice utilities"""
+    def cornice_tween(request):
+        response = handler(request)
+        if request.matched_route is not None:
+            # do some sanity checking on the response using filters
+            services = request.registry.get('cornice_services', {})
+            pattern = request.matched_route.pattern
+            service = services.get(pattern, None)
+            if service is not None:
+                kwargs, ob = getattr(request, "cornice_args", ({}, None))
+                for _filter in kwargs.get('filters', []):
+                    if isinstance(_filter, basestring) and ob is not None:
+                        _filter = getattr(ob, _filter)
+                        try:
+                            response = _filter(response, request)
+                        except TypeError:
+                            response = _filter(response)
+        return response
+    return cornice_tween
+
+
 def apply_filters(request, response):
     if request.matched_route is not None:
         # do some sanity checking on the response using filters
